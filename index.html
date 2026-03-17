@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Manfield</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#000; --bg2:#0a0a0a; --surface:#161616; --surface2:#1e1e1e; --surface3:#2a2a2a;
+  --blue:#0A84FF; --blue-soft:rgba(10,132,255,0.1); --blue-border:rgba(10,132,255,0.22);
+  --white:#fff; --text:#ebebf5; --text2:rgba(235,235,245,0.55); --text3:rgba(235,235,245,0.28);
+  --sep:rgba(255,255,255,0.07); --sep2:rgba(255,255,255,0.04);
+  --tt:#fe2c55; --ig:#e1306c; --yt:#ff453a; --rd:#ff6314;
+}
+html,body { height:100%; font-family:-apple-system,'Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }
+.frame { max-width:393px; min-height:100vh; margin:0 auto; background:var(--bg); overflow-x:hidden; position:relative; }
+
+/* ── ONBOARDING ── */
+#onboarding { position:fixed; inset:0; max-width:393px; margin:0 auto; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:0 24px 52px; z-index:100; transition:opacity .5s,transform .5s; }
+#onboarding.gone { opacity:0; transform:translateY(-14px); pointer-events:none; }
+.ob-top { position:absolute; top:0; left:0; right:0; height:52%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ob-logo { font-size:13px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--text3); margin-bottom:20px; }
+.ob-headline { font-size:40px; font-weight:700; letter-spacing:-1.4px; line-height:1.07; text-align:center; color:var(--white); }
+.ob-headline span { color:var(--blue); }
+.ob-body { width:100%; display:flex; flex-direction:column; gap:14px; }
+.ob-label { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:.08em; text-transform:uppercase; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { padding:8px 15px; border-radius:100px; background:var(--surface); border:1px solid var(--sep); font-size:14px; font-weight:500; color:var(--text2); cursor:pointer; transition:all .18s; font-family:inherit; }
+.chip.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+.ob-input { width:100%; background:var(--surface); border:1px solid var(--sep); border-radius:14px; padding:14px 16px; font-size:15px; color:var(--text); font-family:inherit; outline:none; -webkit-appearance:none; transition:border-color .2s; }
+.ob-input::placeholder { color:var(--text3); }
+.ob-input:focus { border-color:var(--blue-border); }
+.ob-btn { width:100%; padding:16px; background:var(--blue); color:#fff; border:none; border-radius:100px; font-size:17px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .15s,transform .15s; }
+.ob-btn:active { opacity:.85; transform:scale(.98); }
+
+/* ── APP ── */
+#app { display:none; flex-direction:column; min-height:100vh; padding-bottom:88px; }
+#app.show { display:flex; }
+.sbar { height:48px; display:flex; align-items:center; justify-content:space-between; padding:0 22px 0 26px; }
+.sbar-time { font-size:15px; font-weight:600; color:var(--white); letter-spacing:-.3px; }
+.sbar-icons { display:flex; align-items:center; gap:6px; }
+.sbar-icons svg { fill:var(--white); }
+
+/* ── AI TOP BAR ── */
+.ai-top { padding:8px 16px 14px; position:sticky; top:0; background:rgba(0,0,0,0.92); backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%); z-index:50; border-bottom:1px solid var(--sep); }
+.ai-top-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.wordmark { font-size:26px; font-weight:700; letter-spacing:-.7px; color:var(--white); }
+.goal-pill { display:flex; align-items:center; gap:6px; background:var(--blue-soft); border:1px solid var(--blue-border); border-radius:100px; padding:5px 12px 5px 8px; cursor:pointer; }
+.goal-pill .dot { width:6px; height:6px; border-radius:50%; background:var(--blue); animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.goal-pill span { font-size:12px; font-weight:600; color:var(--blue); max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ai-bar { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--sep); border-radius:14px; padding:11px 14px; cursor:pointer; transition:border-color .2s; }
+.ai-bar:active { border-color:var(--blue-border); }
+.ai-badge { font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-soft); border-radius:6px; padding:3px 8px; flex-shrink:0; }
+.ai-hint { flex:1; font-size:14px; color:var(--text3); }
+.ai-arr { font-size:16px; color:var(--text3); }
+
+/* ── FEED ── */
+.feed { display:flex; flex-direction:column; padding:20px 0 8px; }
+.sec-hd { display:flex; align-items:center; justify-content:space-between; padding:0 18px; margin-bottom:13px; }
+.sec-hd-left { display:flex; align-items:center; gap:9px; }
+.sec-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.sec-title { font-size:19px; font-weight:700; letter-spacing:-.4px; color:var(--white); }
+.sec-more { font-size:14px; font-weight:500; color:var(--blue); cursor:pointer; }
+.feed-div { height:1px; background:var(--sep2); margin:22px 18px; }
+
+/* ── HERO ── */
+.hero-wrap { padding:0 18px; margin-bottom:20px; }
+.hero-card { border-radius:18px; overflow:hidden; position:relative; height:200px; cursor:pointer; background:var(--surface2); transition:transform .2s; display:block; text-decoration:none; }
+.hero-card:active { transform:scale(.98); }
+.hero-bg { width:100%; height:100%; object-fit:cover; display:flex; align-items:center; justify-content:center; font-size:56px; }
+.hero-bg img { width:100%; height:100%; object-fit:cover; }
+.hero-grad { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.92) 30%,rgba(0,0,0,.2) 70%,transparent); }
+.hero-info { position:absolute; bottom:0; left:0; right:0; padding:16px; }
+.hero-platform { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 8px; border-radius:5px; margin-bottom:7px; }
+.hero-title { font-size:17px; font-weight:700; letter-spacing:-.4px; line-height:1.25; color:var(--white); margin-bottom:4px; }
+.hero-sub { font-size:12px; color:rgba(255,255,255,.5); }
+.hero-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:52px; height:52px; border-radius:50%; background:rgba(255,255,255,.15); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; font-size:18px; }
+
+/* ── SHORT VIDEOS ── */
+.hrow { display:flex; gap:11px; padding:0 18px; overflow-x:auto; scrollbar-width:none; }
+.hrow::-webkit-scrollbar { display:none; }
+.sv { flex-shrink:0; width:126px; height:212px; border-radius:16px; overflow:hidden; position:relative; cursor:pointer; background:var(--surface2); transition:transform .2s; display:block; text-decoration:none; }
+.sv:active { transform:scale(.96); }
+.sv-bg { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:34px; overflow:hidden; }
+.sv-bg img { width:100%; height:100%; object-fit:cover; }
+.sv-grad { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.88) 38%,transparent 68%); }
+.sv-play { position:absolute; top:10px; right:10px; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.15); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; font-size:9px; }
+.sv-info { position:absolute; bottom:0; left:0; right:0; padding:10px; }
+.sv-platform { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
+.sv-title { font-size:11px; font-weight:500; line-height:1.3; color:var(--white); }
+
+/* ── APP CARDS (TikTok/IG) ── */
+.app-cards { display:flex; gap:11px; padding:0 18px; overflow-x:auto; scrollbar-width:none; }
+.app-cards::-webkit-scrollbar { display:none; }
+.app-card { flex-shrink:0; width:160px; border-radius:16px; overflow:hidden; cursor:pointer; background:var(--surface2); transition:transform .2s; text-decoration:none; display:block; }
+.app-card:active { transform:scale(.96); }
+.app-card-thumb { width:100%; height:110px; display:flex; align-items:center; justify-content:center; font-size:36px; position:relative; }
+.app-card-grad { position:absolute; bottom:0; left:0; right:0; height:50%; background:linear-gradient(to top,rgba(0,0,0,.7),transparent); }
+.app-card-badge { position:absolute; top:8px; left:8px; font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:5px; color:#fff; }
+.badge-tt { background:var(--tt); } .badge-ig { background:var(--ig); }
+.app-card-body { padding:10px 11px 13px; }
+.app-card-topic { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px; }
+.app-card-title { font-size:13px; font-weight:600; line-height:1.3; color:var(--white); margin-bottom:5px; letter-spacing:-.2px; }
+.app-card-desc { font-size:11px; color:var(--text2); line-height:1.4; }
+.app-card-cta { display:inline-flex; align-items:center; gap:4px; margin-top:8px; font-size:11px; font-weight:600; padding:5px 10px; border-radius:100px; color:#fff; }
+.cta-tt { background:var(--tt); } .cta-ig { background:var(--ig); }
+
+/* ── YOUTUBE LIST ── */
+.yt-list { display:flex; flex-direction:column; padding:0 18px; }
+.yt-card { display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--sep2); cursor:pointer; transition:opacity .15s; align-items:center; text-decoration:none; }
+.yt-card:last-child { border-bottom:none; }
+.yt-card:active { opacity:.55; }
+.yt-thumb { width:112px; height:66px; border-radius:10px; background:var(--surface2); flex-shrink:0; overflow:hidden; position:relative; }
+.yt-thumb img { width:100%; height:100%; object-fit:cover; }
+.yt-thumb-emoji { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:28px; }
+.yt-dur { position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,.8); color:#fff; font-size:10px; font-weight:600; padding:1px 5px; border-radius:4px; }
+.yt-info { flex:1; display:flex; flex-direction:column; gap:5px; justify-content:center; }
+.yt-title { font-size:13px; font-weight:500; line-height:1.35; color:var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.yt-meta { display:flex; align-items:center; gap:6px; }
+.plat-tag { font-size:9px; font-weight:700; letter-spacing:.04em; padding:2px 6px; border-radius:4px; }
+.tag-yt { background:rgba(255,69,58,.12); color:var(--yt); }
+.yt-views { font-size:11px; color:var(--text3); }
+
+/* ── ARTICLES ── */
+.art-list { display:flex; flex-direction:column; padding:0 18px; }
+.art-card { padding:15px 0; border-bottom:1px solid var(--sep2); cursor:pointer; transition:opacity .15s; }
+.art-card:last-child { border-bottom:none; }
+.art-card:active { opacity:.55; }
+.art-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
+.art-tag { font-size:10px; font-weight:700; color:var(--blue); letter-spacing:.06em; text-transform:uppercase; }
+.art-time { font-size:11px; color:var(--text3); }
+.art-title { font-size:16px; font-weight:600; letter-spacing:-.35px; line-height:1.28; color:var(--white); margin-bottom:5px; }
+.art-desc { font-size:13px; color:var(--text2); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* ── REDDIT ── */
+.rd-list { display:flex; flex-direction:column; padding:0 18px; }
+.rd-card { display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--sep2); cursor:pointer; transition:opacity .15s; align-items:flex-start; text-decoration:none; }
+.rd-card:last-child { border-bottom:none; }
+.rd-card:active { opacity:.55; }
+.rd-icon { width:40px; height:40px; border-radius:10px; background:rgba(255,99,20,.12); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.rd-info { flex:1; }
+.rd-sub { font-size:10px; font-weight:700; color:var(--rd); letter-spacing:.04em; margin-bottom:3px; text-transform:uppercase; }
+.rd-title { font-size:14px; font-weight:500; line-height:1.35; color:var(--text); margin-bottom:4px; }
+.rd-meta { font-size:11px; color:var(--text3); }
+
+/* ── SKELETON LOADER ── */
+.skeleton { background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
+@keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+.sk-hero { height:200px; border-radius:18px; margin:0 18px 20px; }
+.sk-sv { width:126px; height:212px; border-radius:16px; flex-shrink:0; }
+.sk-yt { height:66px; border-radius:10px; }
+.sk-card { width:160px; height:200px; border-radius:16px; flex-shrink:0; }
+.sk-text { height:14px; margin-bottom:6px; }
+.sk-text-sm { height:11px; width:60%; }
+
+/* ── TAB BAR ── */
+.tabbar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:393px; background:rgba(0,0,0,.88); backdrop-filter:blur(28px) saturate(180%); -webkit-backdrop-filter:blur(28px) saturate(180%); border-top:1px solid var(--sep); display:flex; justify-content:space-around; padding:10px 0 28px; z-index:50; }
+.ti { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:2px 16px; }
+.ti svg { width:22px; height:22px; fill:none; stroke:var(--text3); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:stroke .2s; }
+.ti span { font-size:10px; color:var(--text3); font-weight:500; transition:color .2s; }
+.ti.on svg { stroke:var(--blue); } .ti.on span { color:var(--blue); }
+
+/* ── CHAT PANEL ── */
+#chat { position:fixed; inset:0; max-width:393px; margin:0 auto; background:var(--bg); z-index:200; display:flex; flex-direction:column; transform:translateY(100%); transition:transform .4s cubic-bezier(.32,.72,0,1); }
+#chat.open { transform:translateY(0); }
+.chat-drag { width:36px; height:4px; background:var(--surface3); border-radius:2px; margin:12px auto 0; flex-shrink:0; }
+.chat-hd { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--sep); }
+.chat-hd-title { font-size:17px; font-weight:600; color:var(--white); letter-spacing:-.3px; }
+.chat-hd-sub { font-size:12px; color:var(--text3); margin-top:1px; }
+.chat-close { width:28px; height:28px; background:var(--surface2); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:var(--text2); border:none; font-family:inherit; }
+.msgs { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; scrollbar-width:none; }
+.msgs::-webkit-scrollbar { display:none; }
+.bub { max-width:82%; padding:11px 14px; font-size:14px; line-height:1.5; }
+.bub.ai { background:var(--surface); border-radius:4px 18px 18px 18px; align-self:flex-start; color:var(--text); }
+.bub.me { background:var(--blue); border-radius:18px 4px 18px 18px; align-self:flex-end; color:#fff; font-weight:500; }
+.bub-lbl { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--blue); margin-bottom:5px; }
+.qchips { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.qc { padding:7px 13px; background:var(--surface2); border:1px solid var(--sep); border-radius:100px; font-size:13px; font-weight:500; color:var(--text2); cursor:pointer; font-family:inherit; transition:all .18s; }
+.qc:active { background:var(--blue-soft); color:var(--blue); border-color:var(--blue-border); }
+.chat-input-row { padding:12px 16px 34px; border-top:1px solid var(--sep); display:flex; gap:10px; align-items:center; }
+.chat-inp { flex:1; background:var(--surface); border:1px solid var(--sep); border-radius:22px; padding:11px 16px; font-size:15px; color:var(--text); font-family:inherit; outline:none; -webkit-appearance:none; transition:border-color .2s; }
+.chat-inp:focus { border-color:var(--blue-border); }
+.chat-inp::placeholder { color:var(--text3); }
+.chat-send { width:38px; height:38px; background:var(--blue); border:none; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:opacity .15s,transform .15s; }
+.chat-send:active { opacity:.8; transform:scale(.92); }
+.tdots { display:flex; gap:4px; align-items:center; padding:3px 0; }
+.tdots span { width:6px; height:6px; background:var(--text3); border-radius:50%; animation:td 1.2s infinite; }
+.tdots span:nth-child(2){animation-delay:.2s;} .tdots span:nth-child(3){animation-delay:.4s;}
+@keyframes td { 0%,60%,100%{transform:translateY(0);opacity:.4;} 30%{transform:translateY(-5px);opacity:1;} }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+.fu { animation:fadeUp .36s ease forwards; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+<!-- ONBOARDING -->
+<div id="onboarding">
+  <div class="ob-top">
+    <div class="ob-logo">Manfield</div>
+    <h1 class="ob-headline">Learn what<br>you <span>actually</span><br>care about.</h1>
+  </div>
+  <div class="ob-body">
+    <div class="ob-label">Your goal</div>
+    <div class="chips">
+      <div class="chip" onclick="pickGoal(this,'Software Engineer')">Software Engineer</div>
+      <div class="chip" onclick="pickGoal(this,'Entrepreneur')">Entrepreneur</div>
+      <div class="chip" onclick="pickGoal(this,'Designer')">Designer</div>
+      <div class="chip" onclick="pickGoal(this,'Investor')">Investor</div>
+      <div class="chip" onclick="pickGoal(this,'Fitness Coach')">Fitness Coach</div>
+      <div class="chip" onclick="pickGoal(this,'Content Creator')">Content Creator</div>
+    </div>
+    <input class="ob-input" id="ob-input" placeholder="Or type your own goal…" />
+    <button class="ob-btn" onclick="launch()">Get Started</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sbar">
+    <div class="sbar-time" id="clock">9:41</div>
+    <div class="sbar-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="1.5" width="3" height="10.5" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 3C10.6 3 12.9 4.1 14.5 5.9L16 4.2C14 2 11.2.5 8 .5S2 2 0 4.2L1.5 5.9C3.1 4.1 5.4 3 8 3z"/><path d="M8 6.5c1.5 0 2.9.7 3.8 1.8L13.2 7C12 5.5 10.1 4.5 8 4.5S4 5.5 2.8 7l1.4 1.3C5.1 7.2 6.5 6.5 8 6.5z"/><circle cx="8" cy="11" r="1.5"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0" y="1" width="22" height="10" rx="3" stroke="white" stroke-width="1.2" fill="none" opacity=".35"/><rect x="1.2" y="2.2" width="17" height="7.6" rx="2" fill="white"/><path d="M23.5 4.5v3a1.5 1.5 0 000-3z" fill="white" opacity=".4"/></svg>
+    </div>
+  </div>
+
+  <div class="ai-top">
+    <div class="ai-top-row">
+      <div class="wordmark">Manfield</div>
+      <div class="goal-pill" onclick="openChat()">
+        <div class="dot"></div>
+        <span id="goal-label">Loading…</span>
+      </div>
+    </div>
+    <div class="ai-bar" onclick="openChat()">
+      <div class="ai-badge">AI</div>
+      <div class="ai-hint">Ask anything about your goal…</div>
+      <div class="ai-arr">↑</div>
+    </div>
+  </div>
+
+  <div class="feed" id="feed">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tabbar">
+  <div class="ti on">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+    <span>Feed</span>
+  </div>
+  <div class="ti" onclick="openChat()">
+    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>Guide</span>
+  </div>
+  <div class="ti">
+    <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+    <span>Saved</span>
+  </div>
+  <div class="ti">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>Profile</span>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="chat">
+  <div class="chat-drag"></div>
+  <div class="chat-hd">
+    <div>
+      <div class="chat-hd-title">AI Guide</div>
+      <div class="chat-hd-sub">Tuned to <span id="chat-goal-label">your goal</span></div>
+    </div>
+    <button class="chat-close" onclick="closeChat()">✕</button>
+  </div>
+  <div class="msgs" id="msgs">
+    <div class="bub ai">
+      <div class="bub-lbl">Manfield</div>
+      Your feed is live. What do you want to work on today?
+      <div class="qchips">
+        <div class="qc" onclick="tapQ(this)">Where do I start?</div>
+        <div class="qc" onclick="tapQ(this)">Best free resources</div>
+        <div class="qc" onclick="tapQ(this)">How long will it take?</div>
+        <div class="qc" onclick="tapQ(this)">Refresh my feed</div>
+      </div>
+    </div>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-inp" id="chat-inp" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg()" />
+    <button class="chat-send" onclick="sendMsg()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2" fill="white" stroke="none"/></svg>
+    </button>
+  </div>
+</div>
+
+</div><!-- /frame -->
+
+<script>
+// ── STATE ──
+let currentGoal = '';
+let chatHistory = [];
+let pickedGoal = '';
+
+// ── CLOCK ──
+function tick() {
+  const n = new Date();
+  const h = n.getHours(), m = n.getMinutes();
+  document.getElementById('clock').textContent = h + ':' + (m < 10 ? '0' + m : m);
+}
+tick(); setInterval(tick, 10000);
+
+// ── ONBOARDING ──
+function pickGoal(el, v) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  pickedGoal = v;
+  document.getElementById('ob-input').value = '';
+}
+
+function launch() {
+  const custom = document.getElementById('ob-input').value.trim();
+  currentGoal = custom || pickedGoal || 'Software Engineer';
+  localStorage.setItem('mf_goal', currentGoal);
+  document.getElementById('goal-label').textContent = currentGoal;
+  document.getElementById('chat-goal-label').textContent = currentGoal;
+  const ob = document.getElementById('onboarding');
+  ob.classList.add('gone');
+  document.getElementById('app').classList.add('show');
+  setTimeout(() => ob.style.display = 'none', 520);
+  loadFeed();
+}
+
+// Check for saved goal on load
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('mf_goal');
+  if (saved) {
+    currentGoal = saved;
+    document.getElementById('goal-label').textContent = currentGoal;
+    document.getElementById('chat-goal-label').textContent = currentGoal;
+    document.getElementById('onboarding').style.display = 'none';
+    document.getElementById('app').classList.add('show');
+    loadFeed();
+  }
+});
+
+// ── FEED LOADER ──
+async function loadFeed() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = renderSkeletons();
+
+  try {
+    const [ytLong, ytShort, rabbitHoles, reddit] = await Promise.allSettled([
+      fetchJSON(`/api/youtube?goal=${encodeURIComponent(currentGoal)}&type=video`),
+      fetchJSON(`/api/youtube?goal=${encodeURIComponent(currentGoal)}&type=short`),
+      fetchJSON(`/api/rabbit-holes?goal=${encodeURIComponent(currentGoal)}`),
+      fetchJSON(`/api/reddit?goal=${encodeURIComponent(currentGoal)}`),
+    ]);
+
+    const long = ytLong.status === 'fulfilled' ? ytLong.value.videos || [] : [];
+    const shorts = ytShort.status === 'fulfilled' ? ytShort.value.videos || [] : [];
+    const holes = rabbitHoles.status === 'fulfilled' ? rabbitHoles.value : { tiktok: [], instagram: [] };
+    const posts = reddit.status === 'fulfilled' ? reddit.value.posts || [] : [];
+
+    feed.innerHTML = buildFeed(long, shorts, holes, posts);
+  } catch (e) {
+    feed.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--text3);">Couldn't load feed. Check your API keys in Vercel.</div>`;
+  }
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── FEED BUILDER ──
+function buildFeed(long, shorts, holes, posts) {
+  const hero = long[0];
+  const restLong = long.slice(1);
+
+  return `
+    ${hero ? renderHero(hero) : ''}
+
+    ${shorts.length ? `
+    <div class="sec-hd fu">
+      <div class="sec-hd-left">
+        <div class="sec-icon" style="background:rgba(254,44,85,.15)">🎵</div>
+        <span class="sec-title">Short Videos</span>
+      </div>
+      <span class="sec-more">See All</span>
+    </div>
+    <div class="hrow fu">
+      ${shorts.map(v => renderShortCard(v)).join('')}
+    </div>
+    <div class="feed-div"></div>` : ''}
+
+    ${holes.tiktok?.length ? `
+    <div class="sec-hd fu">
+      <div class="sec-hd-left">
+        <div class="sec-icon" style="background:rgba(254,44,85,.15)">♪</div>
+        <span class="sec-title">TikTok Rabbit Holes</span>
+      </div>
+      <span class="sec-more">See All</span>
+    </div>
+    <div class="app-cards fu">
+      ${holes.tiktok.map(h => renderAppCard(h, 'tt')).join('')}
+    </div>
+    <div class="feed-div"></div>` : ''}
+
+    ${holes.instagram?.length ? `
+    <div class="sec-hd fu">
+      <div class="sec-hd-left">
+        <div class="sec-icon" style="background:rgba(225,48,108,.15)">📸</div>
+        <span class="sec-title">Instagram Rabbit Holes</span>
+      </div>
+      <span class="sec-more">See All</span>
+    </div>
+    <div class="app-cards fu">
+      ${holes.instagram.map(h => renderAppCard(h, 'ig')).join('')}
+    </div>
+    <div class="feed-div"></div>` : ''}
+
+    ${restLong.length ? `
+    <div class="sec-hd fu">
+      <div class="sec-hd-left">
+        <div class="sec-icon" style="background:rgba(255,69,58,.15)">▶</div>
+        <span class="sec-title">YouTube</span>
+      </div>
+      <span class="sec-more">See All</span>
+    </div>
+    <div class="yt-list fu">
+      ${restLong.map(v => renderYTCard(v)).join('')}
+    </div>
+    <div class="feed-div"></div>` : ''}
+
+    ${posts.length ? `
+    <div class="sec-hd fu">
+      <div class="sec-hd-left">
+        <div class="sec-icon" style="background:rgba(255,99,20,.12)">👾</div>
+        <span class="sec-title">Reddit</span>
+      </div>
+      <span class="sec-more">See All</span>
+    </div>
+    <div class="rd-list fu">
+      ${posts.map(p => renderRedditCard(p)).join('')}
+    </div>` : ''}
+  `;
+}
+
+function renderHero(v) {
+  return `
+    <div class="hero-wrap fu">
+      <a class="hero-card" href="${v.url}" target="_blank">
+        <div class="hero-bg">
+          ${v.thumbnail ? `<img src="${v.thumbnail}" alt="${esc(v.title)}" onerror="this.style.display='none'">` : '🎬'}
+        </div>
+        <div class="hero-grad"></div>
+        <div class="hero-play">▶</div>
+        <div class="hero-info">
+          <div class="hero-platform" style="background:rgba(255,69,58,.18);color:#ff453a;">▶ YouTube</div>
+          <div class="hero-title">${esc(v.title)}</div>
+          <div class="hero-sub">${esc(v.channel)}</div>
+        </div>
+      </a>
+    </div>`;
+}
+
+function renderShortCard(v) {
+  return `
+    <a class="sv" href="${v.url}" target="_blank">
+      <div class="sv-bg">
+        ${v.thumbnail ? `<img src="${v.thumbnail}" alt="" onerror="this.parentElement.innerHTML='🎬'">` : '🎬'}
+      </div>
+      <div class="sv-grad"></div>
+      <div class="sv-play">▶</div>
+      <div class="sv-info">
+        <div class="sv-platform" style="color:#ff453a;">YouTube</div>
+        <div class="sv-title">${esc(v.title)}</div>
+      </div>
+    </a>`;
+}
+
+function renderYTCard(v) {
+  return `
+    <a class="yt-card" href="${v.url}" target="_blank">
+      <div class="yt-thumb">
+        ${v.thumbnail ? `<img src="${v.thumbnail}" alt="" onerror="this.style.display='none'">` : '<div class="yt-thumb-emoji">🎬</div>'}
+      </div>
+      <div class="yt-info">
+        <div class="yt-title">${esc(v.title)}</div>
+        <div class="yt-meta">
+          <span class="plat-tag tag-yt">YouTube</span>
+          <span class="yt-views">${esc(v.channel)}</span>
+        </div>
+      </div>
+    </a>`;
+}
+
+function renderAppCard(h, type) {
+  const isTT = type === 'tt';
+  const color = isTT ? 'var(--tt)' : 'var(--ig)';
+  const bg = isTT
+    ? 'linear-gradient(135deg,#1a0510,#2d0818)'
+    : 'linear-gradient(135deg,#1a0a18,#2a1028)';
+  const emojis = ['💻','🚀','📱','🎯','💡','🌐','📅','⌨️','💰','🏢'];
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+  return `
+    <a class="app-card" href="${h.url}" target="_blank">
+      <div class="app-card-thumb" style="background:${bg}">
+        ${emoji}
+        <div class="app-card-grad"></div>
+        <div class="app-card-badge ${isTT ? 'badge-tt' : 'badge-ig'}">${isTT ? 'TikTok' : 'Instagram'}</div>
+      </div>
+      <div class="app-card-body">
+        <div class="app-card-topic" style="color:${color}">${esc(h.topic)}</div>
+        <div class="app-card-title">${esc(h.title)}</div>
+        <div class="app-card-desc">${esc(h.desc)}</div>
+        <div class="app-card-cta ${isTT ? 'cta-tt' : 'cta-ig'}">Open ${isTT ? 'TikTok' : 'Instagram'} →</div>
+      </div>
+    </a>`;
+}
+
+function renderRedditCard(p) {
+  const icons = ['🗣️','💡','🎯','📈','🔥','💬'];
+  const icon = icons[Math.floor(Math.random() * icons.length)];
+  return `
+    <a class="rd-card" href="${p.url}" target="_blank">
+      <div class="rd-icon">${icon}</div>
+      <div class="rd-info">
+        <div class="rd-sub">r/${esc(p.subreddit)}</div>
+        <div class="rd-title">${esc(p.title)}</div>
+        <div class="rd-meta">${p.score.toLocaleString()} upvotes · ${p.comments.toLocaleString()} comments</div>
+      </div>
+    </a>`;
+}
+
+function renderSkeletons() {
+  return `
+    <div class="skeleton sk-hero fu"></div>
+    <div class="sec-hd fu"><div class="sec-hd-left"><div class="skeleton" style="width:120px;height:22px;border-radius:6px"></div></div></div>
+    <div class="hrow fu">
+      ${[1,2,3,4].map(() => `<div class="skeleton sk-sv"></div>`).join('')}
+    </div>
+    <div class="feed-div"></div>
+    <div class="sec-hd fu"><div class="sec-hd-left"><div class="skeleton" style="width:160px;height:22px;border-radius:6px"></div></div></div>
+    <div class="app-cards fu">
+      ${[1,2,3].map(() => `<div class="skeleton sk-card"></div>`).join('')}
+    </div>`;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── CHAT ──
+function openChat() {
+  document.getElementById('chat').classList.add('open');
+  setTimeout(() => document.getElementById('chat-inp').focus(), 440);
+}
+
+function closeChat() {
+  document.getElementById('chat').classList.remove('open');
+}
+
+function addMsg(txt, role) {
+  const c = document.getElementById('msgs');
+  const d = document.createElement('div');
+  d.className = `bub ${role} fu`;
+  if (role === 'ai') d.innerHTML = `<div class="bub-lbl">Manfield</div>${txt.replace(/\n/g, '<br>')}`;
+  else d.textContent = txt;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function showDots() {
+  const c = document.getElementById('msgs');
+  const d = document.createElement('div');
+  d.className = 'bub ai'; d.id = 'dots';
+  d.innerHTML = `<div class="tdots"><span></span><span></span><span></span></div>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+
+function clearDots() { const d = document.getElementById('dots'); if (d) d.remove(); }
+
+async function sendMsg() {
+  const inp = document.getElementById('chat-inp');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  addMsg(txt, 'me');
+  inp.value = '';
+  chatHistory.push({ role: 'user', content: txt });
+  showDots();
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: txt, goal: currentGoal, history: chatHistory.slice(-6) })
+    });
+    const data = await res.json();
+    clearDots();
+    const reply = data.reply || "Sorry, I couldn't get a response. Try again.";
+    addMsg(reply, 'ai');
+    chatHistory.push({ role: 'assistant', content: reply });
+    if (txt.toLowerCase().includes('refresh') || txt.toLowerCase().includes('more content')) {
+      loadFeed();
+    }
+  } catch (e) {
+    clearDots();
+    addMsg("Couldn't reach the AI. Check your API key in Vercel settings.", 'ai');
+  }
+}
+
+function tapQ(el) {
+  const txt = el.textContent;
+  el.closest('.qchips').remove();
+  document.getElementById('chat-inp').value = txt;
+  sendMsg();
+}
+</script>
+</body>
+</html>
